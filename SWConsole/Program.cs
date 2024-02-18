@@ -5,8 +5,27 @@ namespace SpaceWarsServices;
 
 class Program
 {
+
     static async Task Main(string[] args)
     {
+        Console.WriteLine("Welcome to SpaceWars Console!");
+        Console.WriteLine("Press 'J' to join a game, or 'Q' to quit.");
+
+        while (true)
+        {
+            var key = Console.ReadKey(intercept: true).Key;
+            switch (key)
+            {
+                case ConsoleKey.J:
+                    await JoinGame();
+                    break;
+                case ConsoleKey.Q:
+                    return;
+                default:
+                    Console.WriteLine("\nInvalid option. Please press 'J' to join a game, or 'Q' to quit.");
+                    break;
+            }
+        }
         //**************************************************************************************
         //***  |    |    |    |                                            |    |    |    |    |
         //***  |    |    |    |       Change your key mappings here        |    |    |    |    |
@@ -126,7 +145,12 @@ class Program
                     break;
             }
         }
-
+        static async Task JoinGame()
+        {
+            Console.WriteLine("\nAttempting to join a game...");
+            ApiService apiService = new ApiService();
+            await apiService.JoinGame(); // This method will be defined in ApiService.cs
+        }
         void printStatus()
         {
             Console.Clear();

@@ -15,24 +15,39 @@ public class ApiService
 
     public async Task<JoinGameResponse> JoinGameAsync(string name)
     {
-        try
+        int retryCount = 0;
+        while (retryCount < 3) // Retry up to 3 times for transient errors
         {
-            var response = await _httpClient.GetAsync($"/game/join?name={Uri.EscapeDataString(name)}");
+            try
+            {
+                var response = await _httpClient.GetAsync($"/game/join?name={Uri.EscapeDataString(name)}");
 
-            response.EnsureSuccessStatusCode(); // Throw an exception if the status code is not a success code
+                response.EnsureSuccessStatusCode(); // Throw an exception if the status code is not a success code
 
-            var content = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<JoinGameResponse>(content);
-            token = result.Token;
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<JoinGameResponse>(content);
+                token = result.Token; // Consider securely storing the token
 
-            return result;
+                Console.WriteLine("Successfully joined the game."); // User feedback
+                return result;
+            }
+            catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+            {
+                // Handle specific HTTP errors (e.g., 503 Service Unavailable)
+                Console.WriteLine("Service is unavailable. Retrying...");
+                retryCount++;
+                await Task.Delay(2000); // Wait 2 seconds before retrying
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions
+                Console.WriteLine($"Error: {ex.Message}");
+                if (retryCount >= 2) throw; // Rethrow the exception on the last retry attempt
+                retryCount++;
+            }
         }
-        catch (Exception ex)
-        {
-            // Handle other exceptions
-            Console.WriteLine($"Error: {ex.Message}");
-            throw;
-        }
+
+        return null; // Return null if unable to join after retries
     }
 
     public async Task QueueAction(IEnumerable<QueueActionRequest> action)
